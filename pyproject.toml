@@ -23,6 +23,7 @@ build-backend = "setuptools.build_meta"
 py-modules = []
 
 [tool.cibuildwheel]
+skip = ["cp36-*", "cp37-*", "cp38-*", "cp39-*"]
 test-requires = [
     "pytest",
     "numpy"
