@@ -12,6 +12,29 @@ jobs:
       - uses: actions/setup-python@v5
       - uses: pre-commit/action@v3.0.1
 
+  build_sdist:
+    needs: [pre-commit]
+    runs-on: ubuntu-latest
+    name: Build source distributable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12-dev"
+      - name: Install build
+        run: python -m pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: ./dist/*.tar.gz
+
   build_wheels:
     needs: [pre-commit]
     name: Build wheels on ${{ matrix.os }}
