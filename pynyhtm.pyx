@@ -57,7 +57,18 @@ cdef extern from "libtinyhtm/src/tinyhtm/geometry.h":
         double lon
         double lat
 
+    struct htm_v3:
+        double x
+        double y
+        double z
+
     htm_errcode htm_sc_init(htm_sc *out, double lon_deg, double lat_deg)
+
+    htm_errcode htm_v3_init(htm_v3 *out, double x, double y, double z)
+
+    htm_errcode htm_sc_tov3(htm_v3 *out, const htm_sc *p)
+
+    htm_errcode htm_v3_tosc(htm_sc *out, const htm_v3 *v)
 
 
 class SphericalCoordinate():
@@ -102,10 +113,71 @@ class SphericalCoordinate():
         except Exception:
             raise ValueError(f"{sc} does not have lat,lon attribute.")
 
+    def to_v3(self) -> tuple[Errorcode, V3]:
+        """Transforms this spherical coordinate into a v3 vector."""
+        ec, v3 = htm_sc_to_v3_raw(self.get_htm_sc())
+        return (Errorcode(ec), V3.from_htm_v3(v3))
+
+
+class V3():
+    """Wrapping class for the v3 struct (vector)."""
+
+    @property
+    def x(self) -> float:
+        """X coordinate of this vector."""
+        return self._x
+
+    @property
+    def y(self) -> float:
+        """Y coordinate of this vector."""
+        return self._y
+
+    @property
+    def z(self) -> float:
+        """Z coordinate of this vector."""
+        return self._z
+
+    def __init__(self, x: float, y: float, z: float) -> None:
+        """
+        Initializes this v3 vector with the given values.
+
+        :param x: x (first) value
+        :param y: y (second) value
+        :param z: z (third) value
+        """
+        self._x=x
+        self._y=y
+        self._z=z
+
+    def get_htm_v3(self):
+        """Gets a htm_v3 strcut based on this v3 object."""
+        return htm_v3(self._x, self._y, self._z)
+
+    def from_htm_v3(v3: htm_v3) -> V3:
+        """
+        Creates a V3 object based on a htm_v3 struct.
+
+        :param v3: htm_v3 struct which contains x,y,z
+        :returns: A V3 object with values from the provided htm_v3 struct
+        :raises valueError: if the provided htm_v3 struct object is invalid
+        """
+        try:
+            x=v3.get("x")
+            y=v3.get("y")
+            z=v3.get("z")
+            return V3(x=x, y=y, z=z)
+        except Exception:
+            raise ValueError(f"{v3} does not have x,y,z attributes.")
+
+    def to_sc(self) -> tuple[Errorcode, SphericalCoordinate]:
+        """Transforms this V3 vector into a sphercial coordinate."""
+        ec, sc = htm_v3_to_sc_raw(self.get_htm_v3())
+        return (Errorcode(ec), SphericalCoordinate.from_htm_sc(sc))
+
 
 def htm_sc_init_raw(latitude: float, longitude: float) -> tuple[htm_errcode, htm_sc]:
     """
-    Wraps htm_sc_init, instantes a htm_sc struct
+    Wraps htm_sc_init, instantiates a htm_sc struct.
 
     :param latitude: latitude of the new struct
     :param longitude: longitude of the new struct
@@ -127,3 +199,57 @@ def htm_sc_init_wrapped(latitude: float, longitude: float) -> tuple[Errorcode, S
     """
     err_code, sc = htm_sc_init_raw(latitude=latitude, longitude=longitude)
     return (Errorcode(err_code), SphericalCoordinate.from_htm_sc(sc))
+
+
+def htm_v3_init_raw(x: float, y: float, z: float) -> tuple[htm_errcode, htm_v3]:
+    """
+    Wraps htm_v3_init, instantiates a htm_v3 struct.
+
+    :param x: x (first) value of the new struct
+    :param y: y (second) value of the new struct
+    :param z: z (third) value of the new struct
+    :returns: tuple containing the htm_errcode and htm_v3 struct
+    """
+    cdef htm_v3 out
+    cdef htm_errcode err_code = htm_v3_init(&out, x, y, z)
+
+    return (err_code, out)
+
+
+def htm_v3_init_wrapped(x: float, y: float, z: float) -> tuple[Errorcode, V3]:
+    """
+    Wraps htm_v3_init, instantiates a wrapped htm_v3 struct with given x,y,z.
+
+    :param x: x (first) value of the new struct
+    :param y: y (second) value of the new struct
+    :param z: z (third) value of the new struct
+    :returns: tuple containing the wrapped error code and wrapped htm_v3 struct
+    """
+    err_code, v3 = htm_v3_init_raw(x, y, z)
+    return (Errorcode(err_code), V3.from_htm_v3(v3))
+
+
+def htm_sc_to_v3_raw(sc: htm_sc) -> tuple[htm_errcode, htm_v3]:
+    """
+    Wraps htm_sc_tov3, transforms a htm_sc struct into a htm_v3 struct.
+
+    :param sc: htm_sc struct with latitude and longitude
+    :returns: tuple containing the htm_errorcode and htm_v3 struct
+    """
+    cdef htm_v3 out
+    cdef htm_errcode err_code = htm_sc_tov3(&out, &sc)
+
+    return (err_code, out)
+
+
+def htm_v3_to_sc_raw(v3: htm_v3) -> tuple[htm_errcode, htm_sc]:
+    """
+    Wraps htm_v3_tosc, transforms a htm_v3 struct into a htm_sc struct.
+
+    :param v3: htm_v3 struct with x,y,z
+    :returns: tuple containing the htm_errorcode and htm_sc struct
+    """
+    cdef htm_sc out
+    cdef htm_errcode err_code = htm_v3_tosc(&out, &v3)
+
+    return(err_code, out)
