@@ -1,0 +1,52 @@
+[tool.black]
+line-length = 120
+
+[tool.flake8]
+max-line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[tool.cython-lint]
+max-line-length = 120
+
+[build-system]
+requires = [
+    "setuptools",
+    "numpy",
+    "cython",
+    "pytest"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.cibuildwheel]
+test-requires = [
+    "pytest",
+    "numpy"
+]
+test-command = "pytest {project}/tests"
+
+[project.optional-dependencies]
+dev = ["black", "isort", "pytest"]
+
+
+[project]
+name = "PynyHTM"
+version = "0.0.1"
+description = "Python wrapper for the libtinyhtm library."
+readme = "README.md"
+authors = [{ name = "Till", email = "till@fleisch.dev" }]
+license = { file = "LICENSE" }
+keywords = ["htm", "libtinyhtm", "hierarchial triangular mesh", "triangle subdivision", "index"]
+dependencies = [
+    "numpy",
+    'tomli; python_version < "3.11"',
+]
+
+[project.urls]
+Homepage = "https://github.com/TillFleisch/PynyHTM"
+Repository = "https://github.com/TillFleisch/PynyHTM.git"
+Issues = "https://github.com/TillFleisch/PynyHTM/issues"

@@ -1,0 +1,4 @@
+[submodule "libtinyhtm"]
+	path = libtinyhtm
+	url = https://github.com/TillFleisch/libtinyhtm/
+	branch = h5_less
