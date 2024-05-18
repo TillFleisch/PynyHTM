@@ -1,5 +1,6 @@
 """Wrapping classes and methods for libtinyhtm."""
 from enum import Enum
+from numpy cimport int64_t
 
 
 cdef extern from "libtinyhtm/src/licence.cxx":
@@ -96,7 +97,7 @@ class SphericalCoordinate():
 
     def get_htm_sc(self):
         """Gets a htm_sc strcut based on this spherical coordinate."""
-        return htm_sc(self._latitude, self._longitude)
+        return htm_sc(self._longitude, self._latitude)
 
     def from_htm_sc(sc: htm_sc) -> SphericalCoordinate:
         """
@@ -117,6 +118,19 @@ class SphericalCoordinate():
         """Transforms this spherical coordinate into a v3 vector."""
         ec, v3 = htm_sc_to_v3_raw(self.get_htm_sc())
         return (Errorcode(ec), V3.from_htm_v3(v3))
+
+    def get_htm_id(self, level: int) -> int64_t:
+        """Gets the HTM id for this spherical coordinate at the given level.
+
+        :param level: depth at which the id should be determined.
+        :returns: id of the trixel in which this spherical coordinate lands
+        :raises valueError: if the provided htm_v3 struct object is invalid
+        """
+        ec, v3 = self.to_v3()
+        if ec != Errorcode.HTM_OK:
+            raise ValueError("Invalid V3 provided {ec}")
+
+        return v3.get_htm_id(level)
 
 
 class V3():
@@ -173,6 +187,15 @@ class V3():
         """Transforms this V3 vector into a sphercial coordinate."""
         ec, sc = htm_v3_to_sc_raw(self.get_htm_v3())
         return (Errorcode(ec), SphericalCoordinate.from_htm_sc(sc))
+
+    def get_htm_id(self, level: int) -> int64_t:
+        """Gets the HTM id for this v3 vector at the given level.
+
+        :param level: depth at which the id should be determined.
+        :returns: id of the trixel in which this v3 lands
+        """
+
+        return htm_v3_id_raw(self.get_htm_v3(), level)
 
 
 def htm_sc_init_raw(latitude: float, longitude: float) -> tuple[htm_errcode, htm_sc]:
@@ -253,3 +276,19 @@ def htm_v3_to_sc_raw(v3: htm_v3) -> tuple[htm_errcode, htm_sc]:
     cdef htm_errcode err_code = htm_v3_tosc(&out, &v3)
 
     return(err_code, out)
+
+
+cdef extern from "libtinyhtm/src/tinyhtm/htm.h":
+    int64_t htm_v3_id(const htm_v3 *point, int level)
+
+
+def htm_v3_id_raw(v: htm_v3, level: int) -> int64_t:
+    """
+    Retrieves the trixel is for a given v3.
+
+    :param v: v3 vector
+    :param level: trixel depth
+    :returns: id of the trixel in which v3 lands at the given level
+    """
+    print(f"{v} - {level} - {htm_v3_id(&v, level)}")
+    return htm_v3_id(&v, level)

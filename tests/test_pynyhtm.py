@@ -86,3 +86,65 @@ def test_v3_to_sc_wrapped():
     ec, sc = v3.to_sc()
     assert ec == PynyHTM.Errorcode.HTM_OK
     assert sc.latitude != 0 and sc.longitude != 0
+
+
+@pytest.mark.parametrize("latitude, longitude", [(10, 0), (15, 0), (20, 20)])
+def test_sc_to_v3_to_sc(latitude: float, longitude: float):
+    """Tests wrapped conversion from v3 vector to spherical coordinates."""
+    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    ec, v3 = sc.to_v3()
+    assert ec == PynyHTM.Errorcode.HTM_OK
+    ec, sc = v3.to_sc()
+    assert ec == PynyHTM.Errorcode.HTM_OK
+    assert abs(sc.latitude - latitude) < 0.001 and abs(sc.longitude - longitude) < 0.001
+
+
+@pytest.mark.parametrize(
+    "latitude, longitude, level, id",
+    [
+        (51.7444480, 10.6862911, 0, 15),
+        (51.7444480, 10.6862911, 3, 980),
+        (51.7444480, 10.6862911, 8, 1003971),
+        (51.7444480, 10.6862911, 20, 16843849991222),
+    ],
+)
+def test_v3_to_id_raw(latitude: float, longitude: float, level: float, id: int):
+    """Tests trixel id wrapping for a given v3 vector."""
+    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    ec, v3 = sc.to_v3()
+    assert ec == PynyHTM.Errorcode.HTM_OK
+    assert PynyHTM.htm_v3_id_raw(v3.get_htm_v3(), level) == id
+
+
+@pytest.mark.parametrize(
+    "latitude, longitude, level, target_id",
+    [
+        (51.7444480, 10.6862911, 0, 15),
+        (51.7444480, 10.6862911, 3, 980),
+        (51.7444480, 10.6862911, 8, 1003971),
+        (51.7444480, 10.6862911, 20, 16843849991222),
+    ],
+)
+def test_v3_to_id_wrapped(latitude: float, longitude: float, level: float, target_id: int):
+    """Tests trixel id wrapping using the V3 class."""
+    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    ec, v3 = sc.to_v3()
+    assert ec == PynyHTM.Errorcode.HTM_OK
+    id = v3.get_htm_id(level)
+    assert id == target_id
+
+
+@pytest.mark.parametrize(
+    "latitude, longitude, level, target_id",
+    [
+        (51.7444480, 10.6862911, 0, 15),
+        (51.7444480, 10.6862911, 3, 980),
+        (51.7444480, 10.6862911, 8, 1003971),
+        (51.7444480, 10.6862911, 20, 16843849991222),
+    ],
+)
+def test_sc_to_id_wrapped(latitude: float, longitude: float, level: float, target_id: int):
+    """Tests trixel id wrapping using the spherical coordinate class."""
+    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    id = sc.get_htm_id(level)
+    assert id == target_id
