@@ -114,10 +114,17 @@ class SphericalCoordinate():
         except Exception:
             raise ValueError(f"{sc} does not have lat,lon attribute.")
 
-    def to_v3(self) -> tuple[Errorcode, V3]:
-        """Transforms this spherical coordinate into a v3 vector."""
+    def to_v3(self) -> V3:
+        """
+        Transforms this spherical coordinate into a v3 vector.
+
+        :return: v3 equivalent
+        :raises valueError: if conversation failed
+        """
         ec, v3 = htm_sc_to_v3_raw(self.get_htm_sc())
-        return (Errorcode(ec), V3.from_htm_v3(v3))
+        if Errorcode(ec) != Errorcode.HTM_OK:
+            raise ValueError(f"Conversion to V3 failed: {ec}")
+        return V3.from_htm_v3(v3)
 
     def get_htm_id(self, level: int) -> int64_t:
         """Gets the HTM id for this spherical coordinate at the given level.
@@ -126,11 +133,7 @@ class SphericalCoordinate():
         :returns: id of the trixel in which this spherical coordinate lands
         :raises valueError: if the provided htm_v3 struct object is invalid
         """
-        ec, v3 = self.to_v3()
-        if ec != Errorcode.HTM_OK:
-            raise ValueError("Invalid V3 provided {ec}")
-
-        return v3.get_htm_id(level)
+        return self.to_v3().get_htm_id(level)
 
 
 class V3():
@@ -183,10 +186,17 @@ class V3():
         except Exception:
             raise ValueError(f"{v3} does not have x,y,z attributes.")
 
-    def to_sc(self) -> tuple[Errorcode, SphericalCoordinate]:
-        """Transforms this V3 vector into a sphercial coordinate."""
+    def to_sc(self) -> SphericalCoordinate:
+        """
+        Transforms this V3 vector into a sphercial coordinate.
+
+        :returns: Spherical coordinate equivalent
+        :raises valueError: if conversion failed
+        """
         ec, sc = htm_v3_to_sc_raw(self.get_htm_v3())
-        return (Errorcode(ec), SphericalCoordinate.from_htm_sc(sc))
+        if Errorcode(ec) != Errorcode.HTM_OK:
+            raise ValueError(f"Conversion to SC failed: {ec}")
+        return SphericalCoordinate.from_htm_sc(sc)
 
     def get_htm_id(self, level: int) -> int64_t:
         """Gets the HTM id for this v3 vector at the given level.
@@ -212,16 +222,19 @@ def htm_sc_init_raw(latitude: float, longitude: float) -> tuple[htm_errcode, htm
     return (err_code, out)
 
 
-def htm_sc_init_wrapped(latitude: float, longitude: float) -> tuple[Errorcode, SphericalCoordinate]:
+def htm_sc_init_wrapped(latitude: float, longitude: float) -> SphericalCoordinate:
     """
     Wraps htm_sc_init, instantiates a wrapped htm_sc struct with given latitude and longitude.
 
     :param latitude: latitude of the new struct
     :param longitude: longitude of the new struct
-    :returns: tuple containing the wrapped error code and wrapped htm_sc struct
+    :returns: wrapped htm_sc struct as SphericalCoordinate object
+    :raises valueError: if struct instantiation failed
     """
-    err_code, sc = htm_sc_init_raw(latitude=latitude, longitude=longitude)
-    return (Errorcode(err_code), SphericalCoordinate.from_htm_sc(sc))
+    ec, sc = htm_sc_init_raw(latitude=latitude, longitude=longitude)
+    if Errorcode(ec) != Errorcode.HTM_OK:
+        raise ValueError(f"htm_sc instantiation failed: {ec}")
+    return SphericalCoordinate.from_htm_sc(sc)
 
 
 def htm_v3_init_raw(x: float, y: float, z: float) -> tuple[htm_errcode, htm_v3]:
@@ -239,7 +252,7 @@ def htm_v3_init_raw(x: float, y: float, z: float) -> tuple[htm_errcode, htm_v3]:
     return (err_code, out)
 
 
-def htm_v3_init_wrapped(x: float, y: float, z: float) -> tuple[Errorcode, V3]:
+def htm_v3_init_wrapped(x: float, y: float, z: float) -> V3:
     """
     Wraps htm_v3_init, instantiates a wrapped htm_v3 struct with given x,y,z.
 
@@ -247,9 +260,12 @@ def htm_v3_init_wrapped(x: float, y: float, z: float) -> tuple[Errorcode, V3]:
     :param y: y (second) value of the new struct
     :param z: z (third) value of the new struct
     :returns: tuple containing the wrapped error code and wrapped htm_v3 struct
+    :raises valueError: if struct instantiation failed
     """
-    err_code, v3 = htm_v3_init_raw(x, y, z)
-    return (Errorcode(err_code), V3.from_htm_v3(v3))
+    ec, v3 = htm_v3_init_raw(x, y, z)
+    if Errorcode(ec) != Errorcode.HTM_OK:
+        raise ValueError(f"htm_v3 instantiation failed: {ec}")
+    return V3.from_htm_v3(v3)
 
 
 def htm_sc_to_v3_raw(sc: htm_sc) -> tuple[htm_errcode, htm_v3]:

@@ -21,8 +21,7 @@ def test_sc_init_raw_valid(lat: float, lon: float):
 @pytest.mark.parametrize("lat, lon", [(0, 0), (10, 10), (5, 10), (10, 5), (-10, -10)])
 def test_sc_init_wrapped_valid(lat: float, lon: float):
     """Test instantiation of valid sc using wrapping method."""
-    ec, sc = PynyHTM.htm_sc_init_wrapped(lat, lon)
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    sc = PynyHTM.htm_sc_init_wrapped(lat, lon)
     assert sc.longitude == lon and sc.latitude == lat
 
 
@@ -36,8 +35,8 @@ def test_sc_init_raw_invalid(lat: float, lon: float):
 @pytest.mark.parametrize("lat, lon", [(-97, 0), (-100, 0), (-100, -100)])
 def test_sc_init_wrapped_invalid(lat: float, lon: float):
     """Test instantiation of invalid sc using wrapping method."""
-    ec, _ = PynyHTM.htm_sc_init_wrapped(lat, lon)
-    assert ec != PynyHTM.Errorcode.HTM_OK
+    with pytest.raises(ValueError):
+        PynyHTM.htm_sc_init_wrapped(lat, lon)
 
 
 @pytest.mark.parametrize("x, y, z", [(10, 10, 10), (1, 5, 10), (10, 5, 1), (-10, -5, -1)])
@@ -51,8 +50,7 @@ def test_v3_init_raw_valid(x: float, y: float, z: float):
 @pytest.mark.parametrize("x, y, z", [(10, 10, 10), (1, 5, 10), (10, 5, 1), (-10, -5, -1)])
 def test_v3_init_wrapped_valid(x: float, y: float, z: float):
     """Test instantiation of valid v3 using wrapping method."""
-    ec, v3 = PynyHTM.htm_v3_init_wrapped(x, y, z)
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    v3 = PynyHTM.htm_v3_init_wrapped(x, y, z)
     assert v3.x == x and v3.y == y and v3.z == z
 
 
@@ -67,8 +65,7 @@ def test_v3_to_sc_raw():
 def test_sc_to_v3_wrapped():
     """Test wrapped conversion from spherical coordinates to v3."""
     sc = PynyHTM.SphericalCoordinate(10, 10)
-    ec, v3 = sc.to_v3()
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    v3 = sc.to_v3()
     assert v3.x != 0 and v3.y != 0 and v3.z != 0
 
 
@@ -83,8 +80,7 @@ def test_sc_to_v3_raw():
 def test_v3_to_sc_wrapped():
     """Tests wrapped conversion from v3 vector to spherical coordinates."""
     v3 = PynyHTM.V3(1, 1, 1)
-    ec, sc = v3.to_sc()
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    sc = v3.to_sc()
     assert sc.latitude != 0 and sc.longitude != 0
 
 
@@ -92,10 +88,7 @@ def test_v3_to_sc_wrapped():
 def test_sc_to_v3_to_sc(latitude: float, longitude: float):
     """Tests wrapped conversion from v3 vector to spherical coordinates."""
     sc = PynyHTM.SphericalCoordinate(latitude, longitude)
-    ec, v3 = sc.to_v3()
-    assert ec == PynyHTM.Errorcode.HTM_OK
-    ec, sc = v3.to_sc()
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    sc = sc.to_v3().to_sc()
     assert abs(sc.latitude - latitude) < 0.001 and abs(sc.longitude - longitude) < 0.001
 
 
@@ -111,8 +104,7 @@ def test_sc_to_v3_to_sc(latitude: float, longitude: float):
 def test_v3_to_id_raw(latitude: float, longitude: float, level: float, id: int):
     """Tests trixel id wrapping for a given v3 vector."""
     sc = PynyHTM.SphericalCoordinate(latitude, longitude)
-    ec, v3 = sc.to_v3()
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    v3 = sc.to_v3()
     assert PynyHTM.htm_v3_id_raw(v3.get_htm_v3(), level) == id
 
 
@@ -128,8 +120,7 @@ def test_v3_to_id_raw(latitude: float, longitude: float, level: float, id: int):
 def test_v3_to_id_wrapped(latitude: float, longitude: float, level: float, target_id: int):
     """Tests trixel id wrapping using the V3 class."""
     sc = PynyHTM.SphericalCoordinate(latitude, longitude)
-    ec, v3 = sc.to_v3()
-    assert ec == PynyHTM.Errorcode.HTM_OK
+    v3 = sc.to_v3()
     id = v3.get_htm_id(level)
     assert id == target_id
 
