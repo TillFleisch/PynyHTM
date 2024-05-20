@@ -71,6 +71,16 @@ cdef extern from "libtinyhtm/src/tinyhtm/geometry.h":
 
     htm_errcode htm_v3_tosc(htm_sc *out, const htm_v3 *v)
 
+    void htm_v3_add(htm_v3 *out, const htm_v3 *v1, const htm_v3 *v2)
+
+    void htm_v3_sub(htm_v3 *out, const htm_v3 *v1, const htm_v3 *v2)
+
+    void htm_v3_neg(htm_v3 *out, const htm_v3 *v)
+
+    void htm_v3_mul(htm_v3 *out, const htm_v3 *v, double s)
+
+    void htm_v3_div(htm_v3 *out, const htm_v3 *v, double s)
+
 
 class SphericalCoordinate():
     """Wrapping class for the htm_sc struct."""
@@ -207,6 +217,85 @@ class V3():
 
         return htm_v3_id_raw(self.get_htm_v3(), level)
 
+    def add(self, other: V3) -> V3:
+        """
+        Adds the other vector to this vector.
+
+        :param other: vector to add
+        :returns: self + vector
+        """
+        if not isinstance(other, V3):
+            raise TypeError(f"Cannot add {type(other)} to V3")
+
+        result = htm_v3_add_raw(self.get_htm_v3(), other.get_htm_v3())
+        return V3.from_htm_v3(result)
+
+    def __add__(self, other: V3) -> V3:
+        return self.add(other)
+
+    def sub(self, other: V3) -> V3:
+        """
+        Subtracts other from this vector.
+
+        :param other: vector to subtract
+        :returns: self - vector
+        """
+        if not isinstance(other, V3):
+            raise TypeError(f"Cannot subtract {type(other)} from")
+
+        result = htm_v3_sub_raw(self.get_htm_v3(), other.get_htm_v3())
+        return V3.from_htm_v3(result)
+
+    def __sub__(self, other: V3) -> V3:
+        return self.sub(other)
+
+    def neg(self) -> V3:
+        """
+        Negates this vector.
+
+        :returns: vector with inverted components
+        """
+        result = htm_v3_neg_raw(self.get_htm_v3())
+        return V3.from_htm_v3(result)
+
+    def __neg__(self) -> V3:
+        return self.neg()
+
+    def mul(self, scalar: float) -> V3:
+        """
+        Scalar multiplication with this v3.
+
+        :param scalar: scalar
+        :returns: self * scalar
+        """
+        if not isinstance(scalar, float):
+            raise TypeError(f"Cannot multiply V3 with {type(scalar)}")
+
+        result = htm_v3_mul_raw(self.get_htm_v3(), scalar)
+        return V3.from_htm_v3(result)
+
+    def __mul__(self, scalar: float) -> V3:
+        return self.mul(scalar)
+
+    def div(self, scalar: float) -> V3:
+        """
+        Scalar division with this v3.
+
+        :param scalar: scalar divisor
+        :returns: self / scalar
+        """
+        if not isinstance(scalar, float):
+            raise TypeError(f"Cannot divide V3 by {type(scalar)}")
+
+        if scalar == 0:
+            raise ValueError(f"Cannot divide by {scalar}")
+
+        result = htm_v3_div_raw(self.get_htm_v3(), scalar)
+        return V3.from_htm_v3(result)
+
+    def __truediv__(self, scalar: float) -> V3:
+        return self.div(scalar)
+
 
 def htm_sc_init_raw(latitude: float, longitude: float) -> tuple[htm_errcode, htm_sc]:
     """
@@ -292,6 +381,73 @@ def htm_v3_to_sc_raw(v3: htm_v3) -> tuple[htm_errcode, htm_sc]:
     cdef htm_errcode err_code = htm_v3_tosc(&out, &v3)
 
     return(err_code, out)
+
+
+def htm_v3_add_raw(v1: htm_v3, v2: htm_v3) -> htm_v3:
+    """
+    Adds two vectors.
+
+    :param v1: first vector
+    :param v2: second vector
+    :returns: sum of v1 and v2
+    """
+    cdef htm_v3 out
+    htm_v3_add(&out, &v1, &v2)
+    return out
+
+
+def htm_v3_sub_raw(v1: htm_v3, v2: htm_v3) -> htm_v3:
+    """
+    Subtracts two vectors.
+
+    :param v1: first vector
+    :param v2: second vector
+    :returns:  v1 - v2
+    """
+    cdef htm_v3 out
+    htm_v3_sub(&out, &v1, &v2)
+    return out
+
+
+def htm_v3_neg_raw(v1: htm_v3) -> htm_v3:
+    """
+    Negates the given vector.
+
+    :param v1: first vector
+    :returns:  v1 - v2
+    """
+    cdef htm_v3 out
+    htm_v3_neg(&out, &v1)
+    return out
+
+
+def htm_v3_mul_raw(v1: htm_v3, scalar: float) -> htm_v3:
+    """
+    Scalar vector multiplication.
+
+    :param v1: first vector
+    :param scalar: scalar multiplier
+    :returns:  v1 * scalar
+    """
+    cdef htm_v3 out
+    htm_v3_mul(&out, &v1, scalar)
+    return out
+
+
+def htm_v3_div_raw(v1: htm_v3, scalar: float) -> htm_v3:
+    """
+    Scalar vector division.
+
+    :param v1: first vector
+    :param scalar: scalar divisor
+    :returns:  v1 / divisor
+    """
+    if scalar == 0:
+        raise ValueError(f"Cannot divide by {scalar}")
+
+    cdef htm_v3 out
+    htm_v3_div(&out, &v1, scalar)
+    return out
 
 
 cdef extern from "libtinyhtm/src/tinyhtm/htm.h":

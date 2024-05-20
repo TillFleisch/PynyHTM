@@ -3,6 +3,7 @@
 import pytest
 
 import PynyHTM
+from PynyHTM import V3, SphericalCoordinate
 
 
 @pytest.mark.parametrize("lat, lon", [(0, 0), (10, 10), (5, 10), (10, 5), (-10, -10)])
@@ -47,7 +48,7 @@ def test_sc_to_v3_raw():
 @pytest.mark.parametrize("latitude, longitude", [(10, 0), (15, 0), (20, 20)])
 def test_sc_to_v3_to_sc(latitude: float, longitude: float):
     """Tests wrapped conversion from v3 vector to spherical coordinates."""
-    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    sc = SphericalCoordinate(latitude, longitude)
     sc = sc.to_v3().to_sc()
     assert abs(sc.latitude - latitude) < 0.001 and abs(sc.longitude - longitude) < 0.001
 
@@ -63,6 +64,109 @@ def test_sc_to_v3_to_sc(latitude: float, longitude: float):
 )
 def test_v3_to_id_raw(latitude: float, longitude: float, level: float, id: int):
     """Tests trixel id wrapping for a given v3 vector."""
-    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    sc = SphericalCoordinate(latitude, longitude)
     v3 = sc.to_v3()
     assert PynyHTM.htm_v3_id_raw(v3.get_htm_v3(), level) == id
+
+
+@pytest.mark.parametrize(
+    "x1, y1, z1, x2, y2, z2",
+    [
+        (0, 0, 0, 0, 0, 0),
+        (1, 1, 1, 0, 0, 0),
+        (1, 1, 1, 1, 1, 1),
+        (1, 2, 3, 4, 5, 6),
+        (-1, 2, -3, -4, -5, 6),
+    ],
+)
+def test_htm_v3_add_raw(x1: float, y1: float, z1: float, x2: float, y2: float, z2: float):
+    """Tests addition of v3 vectors."""
+    ec, v1 = PynyHTM.htm_v3_init_raw(x1, y1, z1)
+    assert ec == 0
+    ec, v2 = PynyHTM.htm_v3_init_raw(x2, y2, z2)
+    assert ec == 0
+
+    res = PynyHTM.htm_v3_add_raw(v1, v2)
+    res = V3.from_htm_v3(res)
+    assert res.x == x1 + x2 and res.y == y1 + y2 and res.z == z1 + z2
+
+
+@pytest.mark.parametrize(
+    "x1, y1, z1, x2, y2, z2",
+    [
+        (0, 0, 0, 0, 0, 0),
+        (1, 1, 1, 0, 0, 0),
+        (1, 1, 1, 1, 1, 1),
+        (1, 2, 3, 4, 5, 6),
+        (-1, 2, -3, -4, -5, 6),
+    ],
+)
+def test_htm_v3_sub_raw(x1: float, y1: float, z1: float, x2: float, y2: float, z2: float):
+    """Tests subtraction of v3 vectors."""
+    ec, v1 = PynyHTM.htm_v3_init_raw(x1, y1, z1)
+    assert ec == 0
+    ec, v2 = PynyHTM.htm_v3_init_raw(x2, y2, z2)
+    assert ec == 0
+
+    res = PynyHTM.htm_v3_sub_raw(v1, v2)
+    res = V3.from_htm_v3(res)
+    assert res.x == x1 - x2 and res.y == y1 - y2 and res.z == z1 - z2
+
+
+@pytest.mark.parametrize(
+    "x, y, z",
+    [
+        (0, 0, 0),
+        (1, 1, 1),
+        (1, 2, 3),
+        (-1, -2, 3),
+    ],
+)
+def test_htm_v3_neg_raw(x: float, y: float, z: float):
+    """Tests the negation of vectors."""
+    ec, v1 = PynyHTM.htm_v3_init_raw(x, y, z)
+    assert ec == 0
+
+    res = PynyHTM.htm_v3_neg_raw(v1)
+    res = V3.from_htm_v3(res)
+    assert res.x == -x and res.y == -y and res.z == -z
+
+
+@pytest.mark.parametrize(
+    "x, y, z, scalar",
+    [
+        (0, 0, 0, 10),
+        (1, 1, 1, 2.5),
+        (1, 1, 1, 0),
+        (1, 2, 3, 3.14),
+        (-1, -2, 3, 0),
+    ],
+)
+def test_htm_v3_mul_raw(x: float, y: float, z: float, scalar: float):
+    """Tests the scalar multiplication of vectors."""
+    ec, v1 = PynyHTM.htm_v3_init_raw(x, y, z)
+    assert ec == 0
+
+    res = PynyHTM.htm_v3_mul_raw(v1, scalar)
+    res = V3.from_htm_v3(res)
+    assert res.x == x * scalar and res.y == y * scalar and res.z == z * scalar
+
+
+@pytest.mark.parametrize(
+    "x, y, z, scalar",
+    [
+        (0, 0, 0, 10),
+        (1, 1, 1, 2.5),
+        (1, 1, 1, 2.0),
+        (1, 2, 3, 3.14),
+        (-1, -2, 3, 3),
+    ],
+)
+def test_htm_v3_div_raw(x: float, y: float, z: float, scalar: float):
+    """Tests the scalar division of vectors."""
+    ec, v1 = PynyHTM.htm_v3_init_raw(x, y, z)
+    assert ec == 0
+
+    res = PynyHTM.htm_v3_div_raw(v1, scalar)
+    res = V3.from_htm_v3(res)
+    assert res.x == x / scalar and res.y == y / scalar and res.z == z / scalar
