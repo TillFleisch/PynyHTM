@@ -32,7 +32,7 @@ jobs:
         run: python -m build
 
       - name: Build
-        run: pip install dist/*.whl
+        run: pip install dist/*.whl --force-reinstall 
 
       - name: pytest
         run: python -m pytest
