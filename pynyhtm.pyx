@@ -107,6 +107,10 @@ class SphericalCoordinate():
         self._latitude=latitude
         self._longitude=longitude
 
+    def __repr__(self):
+        """Detailed representation of this SphericalCoordinate."""
+        return f"SphericalCoordinate({str(self.__dict__)})"
+
     def get_htm_sc(self):
         """Gets a htm_sc strcut based on this spherical coordinate."""
         return htm_sc(self._longitude, self._latitude)
@@ -186,6 +190,10 @@ class V3():
         self._x=x
         self._y=y
         self._z=z
+
+    def __repr__(self):
+        """Detailed representation of this V3 Vector."""
+        return f"V3({str(self.__dict__)})"
 
     def get_htm_v3(self):
         """Gets a htm_v3 strcut based on this v3 object."""
@@ -473,7 +481,92 @@ def htm_v3_div_raw(v1: htm_v3, scalar: float) -> htm_v3:
 
 
 cdef extern from "libtinyhtm/src/tinyhtm/htm.h":
+    struct htm_tri:
+        htm_v3[3] verts
+        htm_v3 center
+        double radius
+        int64_t id
+        int level
+
     int64_t htm_v3_id(const htm_v3 *point, int level)
+
+    htm_errcode htm_tri_init(htm_tri *tri, int64_t id)
+
+    int htm_level(int64_t id)
+
+    int64_t htm_idtodec(int64_t id)
+
+
+class Triangle():
+
+    @property
+    def vertices(self) -> V3[3]:
+        """Vertices making up this triangle."""
+        return self._vertices
+
+    @property
+    def center(self) -> V3:
+        """Center point of this triangle."""
+        return self._center
+
+    @property
+    def radius(self) -> float:
+        """Radius of the circle given by the three corners of the triangle."""
+        return self._radius
+
+    @property
+    def id(self) -> int64_t:
+        """HTM ID of this triangle."""
+        return self._id
+
+    @property
+    def level(self) -> int:
+        """Level at which this triangle is within the htm."""
+        return self._level
+
+    def __init__(self, vertices: V3[3], center: V3, radius: float, id: int, level: int) -> None:
+        """
+        Instantiates a triangle and with the given parameters.
+
+        :param vertices: vertices of the triangle
+        :param center: center of the triangle
+        :param radius: radius of the circle defined by the three vertices
+        :param id: htm id of the triangle
+        :param level: level at which the triangle is within the htm
+        """
+        self._vertices = vertices
+        self._center = center
+        self._radius = radius
+        self._id = id
+        self._level = level
+
+    def __repr__(self):
+        """Detailed representation of this Triangle."""
+        return f"Triangle({str(self.__dict__)})"
+
+    def from_htm_tri(struct: htm_tri) -> Triangle:
+        """
+        Instantiates a triangle based on a htm_tri struct.
+
+        :param struct: struct describing the triangle
+        """
+
+        vertices = [V3.from_htm_v3(vertex) for vertex in struct.get("verts")]
+        center = V3.from_htm_v3(struct.get("center"))
+        radius = struct.get("radius")
+        id = struct.get("id")
+        level = int(struct.get("level"))
+
+        return Triangle(vertices, center, radius, id, level)
+
+    def from_id(id: int64_t) -> Triangle:
+        """
+        Instantiates a Triangle object from a given htm id.
+
+        :param id: triangle id
+        :returns: triangle object
+        """
+        return htm_tri_init_wrapped(id)
 
 
 def htm_v3_id_raw(v: htm_v3, level: int) -> int64_t:
@@ -484,5 +577,82 @@ def htm_v3_id_raw(v: htm_v3, level: int) -> int64_t:
     :param level: trixel depth
     :returns: id of the trixel in which v3 lands at the given level
     """
-    print(f"{v} - {level} - {htm_v3_id(&v, level)}")
     return htm_v3_id(&v, level)
+
+
+def htm_tri_init_raw(id: int64_t) -> tuple[htm_errcode, htm_tri]:
+    """
+    Instantiate a htm_tri struct for a given triangle id.
+
+    :param id: Id of the triangle
+    """
+    cdef htm_tri triangle
+    cdef err_code = htm_tri_init(&triangle, id)
+
+    return (err_code, triangle)
+
+
+def htm_tri_init_wrapped(id: int64_t) -> Triangle:
+    """
+    Instantiate a Triangle object for a given triangle id.
+
+    :param id: id of the triangle
+    """
+    cdef htm_tri triangle
+    ec = htm_tri_init(&triangle, id)
+
+    if Errorcode(ec) == Errorcode.HTM_EID:
+        raise ValueError(f"Invalid id: {id}")
+
+    if Errorcode(ec) != Errorcode.HTM_OK:
+        raise ValueError(f"htm_tri instantiation failed: {ec}")
+
+    return Triangle.from_htm_tri(triangle)
+
+
+class HTM():
+
+    def get_level(id: int64_t) -> int:
+        """
+        Retrieves the level of a given ID.
+
+        :param: htm id
+        :returns: level of the id
+        :raises valueError: if the provided id is invalid
+        """
+        return htm_level_raw(id)
+
+    def id_to_dec(id: int64_t) -> int64_t:
+        """
+        Retrieves the decimal representation of an id.
+
+        :param id: triangle id
+        :returns: decimal id representation (concatenated [0-3]*)
+        """
+        return htm_id_to_dec(id)
+
+
+def htm_level_raw(id: int64_t) -> int:
+    """
+    Retrieves the level of a given ID.
+
+    :param: htm id
+    :returns: level of the id
+    :raises valueError: if the provided id is invalid
+    """
+    level = htm_level(id)
+
+    if level < 0:
+        raise ValueError(f"Invalid id: {id}")
+
+    return level
+
+
+def htm_id_to_dec(id: int64_t) -> int64_t:
+    """
+    Retrieves the decimal representation of an id.
+
+    :param id: triangle id
+    :returns: decimal id representation (concatenated [0-3]*)
+    """
+    return htm_idtodec(id)
