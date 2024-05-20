@@ -81,6 +81,8 @@ cdef extern from "libtinyhtm/src/tinyhtm/geometry.h":
 
     void htm_v3_div(htm_v3 *out, const htm_v3 *v, double s)
 
+    double htm_sc_angsep(const htm_sc *p1, const htm_sc *p2)
+
 
 class SphericalCoordinate():
     """Wrapping class for the htm_sc struct."""
@@ -135,6 +137,15 @@ class SphericalCoordinate():
         if Errorcode(ec) != Errorcode.HTM_OK:
             raise ValueError(f"Conversion to V3 failed: {ec}")
         return V3.from_htm_v3(v3)
+
+    def angle_separation(self, other: SphericalCoordinate) -> float:
+        """
+        Determine the angle difference between the two given spherical coordinates.
+
+        :param other: second reference point
+        :returns: angle between sc1 and sc2
+        """
+        return htm_sc_angsep_raw(self.get_htm_sc(), other.get_htm_sc())
 
     def get_htm_id(self, level: int) -> int64_t:
         """Gets the HTM id for this spherical coordinate at the given level.
@@ -324,6 +335,17 @@ def htm_sc_init_wrapped(latitude: float, longitude: float) -> SphericalCoordinat
     if Errorcode(ec) != Errorcode.HTM_OK:
         raise ValueError(f"htm_sc instantiation failed: {ec}")
     return SphericalCoordinate.from_htm_sc(sc)
+
+
+def htm_sc_angsep_raw(sc1: htm_sc, sc2: htm_sc) -> float:
+    """
+    Determine the angle difference between the two given spherical coordinates.
+
+    :param sc1: first position
+    :param sc2: second position
+    :returns: angle between sc1 and sc2
+    """
+    return htm_sc_angsep(&sc1, &sc2)
 
 
 def htm_v3_init_raw(x: float, y: float, z: float) -> tuple[htm_errcode, htm_v3]:

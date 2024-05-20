@@ -170,3 +170,29 @@ def test_htm_v3_div_raw(x: float, y: float, z: float, scalar: float):
     res = PynyHTM.htm_v3_div_raw(v1, scalar)
     res = V3.from_htm_v3(res)
     assert res.x == x / scalar and res.y == y / scalar and res.z == z / scalar
+
+
+@pytest.mark.parametrize(
+    "lat1, lon1, lat2, lon2, target",
+    [
+        (0, 0, 0, 0, 0),
+        (10, 10, 10, 10, 0),
+        (0, 0, 0, 90, 90),
+        (0, 0, 0, -90, 90),
+        (0, 0, 90, 0, 90),
+        (0, 0, 0, 180, 180),
+        (0, -90, 0, 180, 90),
+        (0, 0, 90, 0, 90),
+        (-90, -90, 90, 90, 180),
+    ],
+)
+def test_htm_sc_angsep_raw(lat1, lon1, lat2, lon2, target):
+    """Test the raw angle distance function for sc."""
+    ec, sc1 = PynyHTM.htm_sc_init_raw(lat1, lon1)
+    assert ec == 0
+
+    ec, sc2 = PynyHTM.htm_sc_init_raw(lat2, lon2)
+    assert ec == 0
+
+    result = PynyHTM.htm_sc_angsep_raw(sc1, sc2)
+    assert abs(result - target) < 0.0001
