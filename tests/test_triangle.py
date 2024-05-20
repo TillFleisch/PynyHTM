@@ -55,3 +55,33 @@ def test_htm_id_to_dec():
     """Test if htm_idtodec is wrapped."""
     assert PynyHTM.htm_id_to_dec(12345) > 0
     assert PynyHTM.HTM.id_to_dec(12345) > 0
+
+
+@pytest.mark.parametrize("id, parent_id", [(61, 15), (16062643, 4015660)])
+def test_htm_parent(id: int64, parent_id: int64):
+    """Test parent id determination."""
+    assert PynyHTM.HTM.parent(id) == parent_id
+
+
+@pytest.mark.parametrize("id", [(-1), (123), (15)])
+def test_htm_parent_invalid(id: int64):
+    """Test invalid id for parent determination."""
+    with pytest.raises(ValueError):
+        assert PynyHTM.HTM.parent(id)
+
+
+@pytest.mark.parametrize("id", [(61), (15), (16062643), (4015660)])
+def test_htm_children(id: int64):
+    """Validate generated children are valid."""
+    children = PynyHTM.HTM.children(id)
+
+    # Instantiate child to verify it's id is correct
+    for child in children:
+        assert Triangle.from_id(child) is not None
+
+
+@pytest.mark.parametrize("id", [(123), (-1)])
+def test_htm_children_invalid(id: int64):
+    """Test invalid id during child generation."""
+    with pytest.raises(ValueError):
+        PynyHTM.HTM.children(id)

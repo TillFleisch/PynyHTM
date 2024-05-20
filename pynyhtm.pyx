@@ -631,6 +631,38 @@ class HTM():
         """
         return htm_id_to_dec(id)
 
+    def parent(id: int64_t) -> int64_t:
+        """
+        Determines the parent id of the triangle identified by id.
+
+        :param id: target triangle
+        :returns: parent triangle id
+        :raises valueError: if the provided id is invalid or the triangle is a root triangle
+        """
+        # Assert valid id and not root
+        if HTM.get_level(id) >= 1:
+            return id >> 2
+
+        raise ValueError(f"Root triangle {id} does not have parent!")
+
+    def children(id: int64_t) -> list[int64_t]:
+        """
+        Gets the children contained in the triangle identified by id.
+
+        :param id: target triangle
+        :returns: list of 4 children
+        :raises valueError: if the provided id is invalid
+        """
+
+        # Assert valid id provided
+        HTM.get_level(id)
+
+        children = []
+        for i in range(0, 4):
+            children.append(id<<2 | i)
+
+        return children
+
 
 def htm_level_raw(id: int64_t) -> int:
     """
