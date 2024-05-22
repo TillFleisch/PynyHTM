@@ -14,6 +14,10 @@ def lib_get_license() -> str:
 
 
 cdef extern from "libtinyhtm/src/tinyhtm/common.h":
+    struct htm_range:
+        int64_t min
+        int64_t max
+
     ctypedef enum htm_errcode:
         HTM_OK = 0
         HTM_ENULLPTR
@@ -488,6 +492,11 @@ cdef extern from "libtinyhtm/src/tinyhtm/htm.h":
         int64_t id
         int level
 
+    struct htm_ids:
+        size_t n
+        size_t cap
+        htm_range* range
+
     int64_t htm_v3_id(const htm_v3 *point, int level)
 
     htm_errcode htm_tri_init(htm_tri *tri, int64_t id)
@@ -495,6 +504,13 @@ cdef extern from "libtinyhtm/src/tinyhtm/htm.h":
     int htm_level(int64_t id)
 
     int64_t htm_idtodec(int64_t id)
+
+    htm_ids *htm_s2circle_ids(htm_ids *ids,
+                              const htm_v3 *center,
+                              double radius,
+                              int level,
+                              size_t maxranges,
+                              htm_errcode *err)
 
 
 class Triangle():
@@ -1024,6 +1040,40 @@ class HTM():
                         return  ((id<<2) + 2, flip)
 
         raise NotImplementedError(f"Determining adjecent triangle not implemented for: {id} {direction}")
+
+    # TODO: non-recursive implementation of the neighbor lookup
+    # TODO: searching an area could also be implemented with a flooding algorithm using the neighbor function
+
+    def circle_search(center: V3,
+                      radius: float,
+                      level: int,
+                      max_ranges: int = 50
+                      ) -> list[int]:
+        """
+        Retrieves triangle id's in a given circular region by wrapping the htm_s2circle_ids function.
+
+        :param center:center of the search circle
+        :param radius: radius of the search circle in degrees
+        :param level: level at which the search is performed
+        :param max_ranges: highest number of ranges to use for the search
+        :returns: list of triangle id's which are within the search area
+        :raises runtimeError: if the search failed
+        """
+        cdef htm_v3 center_htm = center.get_htm_v3()
+        cdef htm_errcode error_code
+        cdef htm_ids* result = htm_s2circle_ids(NULL, &center_htm, radius, level, max_ranges, &error_code)
+
+        if Errorcode(error_code) != Errorcode.HTM_OK:
+            raise RuntimeError(f"Search failed with errorcode: {Errorcode(error_code)}")
+
+        # Translate ranges to individual ids
+        ids = []
+        if result.n>0:
+            ranges = result.range
+            for i in range(0, result.n):
+                ids.extend(range(ranges[i].min, ranges[i].max))
+
+        return ids
 
 
 def htm_level_raw(id: int64_t) -> int:

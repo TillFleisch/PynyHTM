@@ -214,3 +214,23 @@ def test_neighbors_fuzz():
         for neighbor in neighbors:
             back_neighbors = PynyHTM.HTM.neighbors(neighbor)
             assert id in back_neighbors
+
+
+@pytest.mark.parametrize(
+    "latitude, longitude, level",
+    [
+        (38.0926507, 140.1839152, 5),
+        (51.3892857, 30.0988303, 12),
+        (53.0466026, 7.6294813, 10),
+        (6.2489561, -75.5580277, 4),
+    ],
+)
+def test_circle_search(latitude: float, longitude: float, level: float):
+    """Test circle search by checking if a result is returned and if direct neighbors are contained."""
+    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
+    neighbors = PynyHTM.HTM.neighbors(sc.get_htm_id(level))
+
+    area_ids = PynyHTM.HTM.circle_search(sc.to_v3(), 20, level)
+
+    for neighbor in neighbors:
+        assert neighbor in area_ids
