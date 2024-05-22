@@ -610,6 +610,23 @@ def htm_tri_init_wrapped(id: int64_t) -> Triangle:
     return Triangle.from_htm_tri(triangle)
 
 
+class NeighborDirection(Enum):
+    """
+    Direction in which the neighboring triangle is specified.
+    The direction is given by the opposite side of the child with number 0/1/2.
+    """
+    OC_ZERO = 0
+    OC_ONE = 1
+    OC_TWO = 2
+
+
+class FlipDirection(Enum):
+    """The direction in which the lookup must be flipped for root level lookups."""
+    NONE=0
+    EAST_WEST=1
+    NORTH_SOUTH=2
+
+
 class HTM():
 
     def get_level(id: int64_t) -> int:
@@ -662,6 +679,351 @@ class HTM():
             children.append(id<<2 | i)
 
         return children
+
+    def neighbors(id: int64_t) -> list[int64_t]:
+        """
+        Gets the neighboring trixels for the given id.
+
+        :param id: id of the source triangle
+        :returns: list of neighboring triangle ids
+        :raises ValueError: if the provided id is invalid
+        """
+
+        # Assert valid id provided
+        HTM.get_level(id)
+
+        # Retrieve all 3 neighboring trixels
+        return [
+            HTM.neighbor(id, NeighborDirection.OC_ZERO)[0],
+            HTM.neighbor(id, NeighborDirection.OC_ONE)[0],
+            HTM.neighbor(id, NeighborDirection.OC_TWO)[0],
+            ]
+
+    def neighbor(id: int64_t, direction: NeighborDirection) -> tuple[int64_t, bool]:
+        """
+        Gets the neighboring trixel for the given id and direction.
+
+        The adjecent trixels can be determined recursively due to the subdividing nature of their generation.
+        Since the orientation of triangles can change at different depth, the neighbor relation is expressed relative
+        to the children of the given triangle.
+        The neighbor in direction "OC_ZERO" for triangle 3 is given by the triangle in the opposite direction of the
+        child with index 0.
+        The opposite direction of the child "30" is the large top right triangle.
+        Similarly OC_ONE and OC_ZERO describe the other two directions which neighbors can have.
+
+
+                 -------------------------
+                \\          /\\          /
+                 \\ OC_1   /32\\  OC_0  /
+                  \\      -------      /
+                   \\    /\\33  /\\   /
+                    \\  /  \\  /  \\ /
+                     \\/ 30 \\/ 31\\/
+                       -------------
+                       \\         /
+                        \\ OC_2  /
+                         \\     /
+                          \\   /
+                           \\ /
+
+
+        In the simplest case (a "center"/id=3 triangle) the neighbors are given by changing the last two bits of the
+        triangle id. In this case they are direct neighbors and lookup is trivial.
+
+        For all other children of a triangle (id = 0,1,2) one neighbor is given as the center triangle of the parent.
+        The two other neighbors are child triangles (also with id = 0,1,2) from neighbors of the parent triangle.
+        Example: The neighbors of "32" (see above) are contained within OC_ZERO and OC_ONE of the parent triangle.
+        I.e. the neighbors of edge triangles (id = 0,1,2) are given by their counter part in the parents neighbors in
+        the direction of the remaining two edge triangles.
+
+        This can be performed recursively until a center triangle is reached, in which case the trivial case holds.
+
+
+        Since the root triangles (8-15) are not oriented in the same fashion as all other triangles, the transition
+        between two of them must be handled separately.
+        Therefore, once a root triangle has been reached during recursion, the correct neighboring triangle is
+        determined using a LUT and a correction Flag is set. This Flag is set to NONE, EAST_WEST (adjecent triangles in
+        the same hemisphere) or NORTH_SOUTH (adjecent triangles in different hemispheres).
+        Based on the Flag, the correct child of the root triangle is determined, such that the children of root
+        triangles align with one another.
+
+
+        Note: This is a rather large function and splitting it into smaller parts would make sense.
+        I have opted against this due to the recursive nature of this method.
+
+
+        :param id: source triangle id
+        :param direction: direction in which the neighbor is to be determined
+        :returns: tuple containing the neighbor id and flip direction if applicable
+        """
+
+        if id < 8:
+            raise ValueError(f"Invalid id provided: {id}")
+
+        # Handle root level neighbors
+        if id <= 15:
+
+            if id == 8:
+                if direction == NeighborDirection.OC_ONE:
+                    return (15, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (11, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (9, FlipDirection.EAST_WEST)
+
+            if id == 9:
+                if direction == NeighborDirection.OC_ONE:
+                    return (14, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (8, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (10, FlipDirection.EAST_WEST)
+
+            if id == 10:
+                if direction == NeighborDirection.OC_ONE:
+                    return (13, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (9, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (11, FlipDirection.NONE)
+
+            if id == 11:
+                if direction == NeighborDirection.OC_ONE:
+                    return (12, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (10, FlipDirection.NONE)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (8, FlipDirection.EAST_WEST)
+
+            if id == 12:
+                if direction == NeighborDirection.OC_ONE:
+                    return(11, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (15, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (13, FlipDirection.EAST_WEST)
+
+            if id == 13:
+                if direction == NeighborDirection.OC_ONE:
+                    return (10, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (12, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (14, FlipDirection.EAST_WEST)
+
+            if id == 14:
+                if direction == NeighborDirection.OC_ONE:
+                    return (9, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (13, FlipDirection.EAST_WEST)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (15, FlipDirection.NONE)
+
+            if id == 15:
+                if direction == NeighborDirection.OC_ONE:
+                    return (8, FlipDirection.NORTH_SOUTH)
+
+                elif direction == NeighborDirection.OC_TWO:
+                    return (14, FlipDirection.NONE)
+
+                elif direction == NeighborDirection.OC_ZERO:
+                    return (12, FlipDirection.EAST_WEST)
+
+            raise NotImplementedError(f"Root level neighbor lookup not implemented for: {id}")
+
+        # Retrieve local (specific triangle id independent) indices
+        tail = id & 3  # triangle number
+        blank_head = id - tail  # parent index without a specified child
+        parent_tail = (blank_head >> 2) & 3  # number of the parent triangle
+
+        # Center trixel
+        if tail == 3:
+            # Neighbors of the center triangle only differ in the last two bits without need for recursion
+            if direction == NeighborDirection.OC_TWO:
+                return (blank_head + 2, FlipDirection.NONE)
+            elif direction == NeighborDirection.OC_ZERO:
+                return (blank_head + 0, FlipDirection.NONE)
+            elif direction == NeighborDirection.OC_ONE:
+                return (blank_head + 1, FlipDirection.NONE)
+
+        # Child triangle with index 0
+        elif tail == 0:
+
+            if direction == NeighborDirection.OC_ZERO:
+                # Center triangle neighbor
+                return (blank_head + 3, FlipDirection.NONE)
+
+            elif direction == NeighborDirection.OC_ONE:
+                # neighbor triangle in direction OC_ONCE
+                if parent_tail != 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ONE)
+
+                    # Flip order at root change
+                    # 9 -> 14
+                    # 12 -> 11
+                    # 14 -> 9
+                    if flip == FlipDirection.NORTH_SOUTH:
+                        return ((id<<2) + 2, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 0, flip)
+
+                else:
+                    id, flip =HTM.neighbor(blank_head>>2, NeighborDirection.OC_ONE)
+
+                    # Flip order at root change
+                    # 8 -> 15
+                    if flip == FlipDirection.NORTH_SOUTH:
+                        return ((id<<2) + 2, FlipDirection.NONE)
+                    else:
+                        return  ((id<<2) + 1, flip)
+
+            elif direction == NeighborDirection.OC_TWO:
+                # neighbor triangle in direction OC_TWO
+                if parent_tail != 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_TWO)
+
+                    # Flip order at root change
+                    # 9 -> 8
+                    # 12 -> 15
+                    # 14 -> 13
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 2, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 0, flip)
+
+                else:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_TWO)
+                    return  ((id<<2) + 2, flip)
+
+        # Child triangle with index 1
+        elif tail ==1:
+
+            if direction == NeighborDirection.OC_ZERO:
+                # Center triangle neighbor
+                return (blank_head + 3, FlipDirection.NONE)
+
+            elif direction == NeighborDirection.OC_ONE:
+                # neighbor triangle in direction OC_ONCE
+                if parent_tail != 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_TWO)
+
+                    # Flip order at root change
+                    # 8 -> 9
+                    # 12 -> 15
+                    # 14 -> 13
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 1, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 2, flip)
+
+                else:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_TWO)
+                    return  ((id<<2) + 1, flip)
+
+            elif direction == NeighborDirection.OC_TWO:
+                # neighbor triangle in direction OC_TWO
+                if parent_tail == 0 or parent_tail == 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+
+                    # Flip order at root change
+                    # 8 -> 9
+                    # 15 -> 12
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 1, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 2, flip)
+
+                elif parent_tail == 1:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+
+                    # Flip order at root change
+                    # 14 -> 13
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 1, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 0, flip)
+
+                elif parent_tail == 2:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+                    return ((id<<2) + 1, flip)
+
+        # Child triangle with index 2
+        elif tail ==2:
+
+            if direction == NeighborDirection.OC_ZERO:
+                # Center triangle neighbor
+                return (blank_head + 3, FlipDirection.NONE)
+
+            elif direction == NeighborDirection.OC_ONE:
+                # neighbor triangle in direction OC_ONCE
+
+                if parent_tail == 0 or parent_tail == 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+
+                    # Flip order at root change
+                    # 8 -> 9
+                    # 15 -> 12
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 0, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 1, flip)
+
+                elif parent_tail == 1:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+
+                    # Flip order at root change
+                    # 13 -> 14
+                    if flip == FlipDirection.EAST_WEST:
+                        return ((id<<2) + 0, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 2, flip)
+
+                elif parent_tail == 2:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ZERO)
+                    return ((id<<2) + 0, flip)
+
+            elif direction == NeighborDirection.OC_TWO:
+                # neighbor triangle in direction OC_TWO
+                if parent_tail != 3:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ONE)
+
+                    # Flip order at root change
+                    # 9 -> 14
+                    # 8 -> 15
+                    # 14 -> 9
+                    if flip == FlipDirection.NORTH_SOUTH:
+                        return ((id<<2) + 0, FlipDirection.NONE)
+                    else:
+                        return ((id<<2) + 1, flip)
+
+                else:
+                    id, flip = HTM.neighbor(blank_head>>2, NeighborDirection.OC_ONE)
+
+                    # Flip order at root change
+                    if flip == FlipDirection.EAST_WEST:
+                        # 15 -> 12
+                        return ((id<<2) + 1, FlipDirection.NONE)
+                    elif flip == FlipDirection.NORTH_SOUTH:
+                        # 15 -> 8
+                        return ((id<<2) + 0, FlipDirection.NONE)
+                    else:
+                        return  ((id<<2) + 2, flip)
+
+        raise NotImplementedError(f"Determining adjecent triangle not implemented for: {id} {direction}")
 
 
 def htm_level_raw(id: int64_t) -> int:
