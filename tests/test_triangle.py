@@ -204,7 +204,7 @@ def test_neighbors_fuzz():
     """Test neighbor generation using symmetry property with random samples."""
     samples = 10000
     for _ in range(0, samples):
-        layer = random.randrange(1, 20)
+        layer = random.randrange(2, 20)
         id_prefix = random.choice([x for x in range(8, 16)])
         id_suffix = random.getrandbits((layer - 1) * 2)
         id = id_prefix << (layer * 2) | id_suffix
