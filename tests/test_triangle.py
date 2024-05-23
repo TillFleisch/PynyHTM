@@ -2,17 +2,16 @@
 
 import random
 
+import pynyhtm
 import pytest
 from numpy import int64
-
-import PynyHTM
-from PynyHTM import Triangle
+from pynyhtm import Triangle
 
 
 @pytest.mark.parametrize("id, level", [(15, 0), (980, 3), (1003971, 8), (16843849991222, 20)])
 def test_htm_tri_init_raw(id: int64, level: int):
     """Test instantiation of htm_tri struct for an id."""
-    ec, htm_tri = PynyHTM.htm_tri_init_raw(id)
+    ec, htm_tri = pynyhtm.htm_tri_init_raw(id)
     assert ec == 0
 
     assert htm_tri is not None
@@ -40,42 +39,42 @@ def test_htm_tri_init_wrapped_invalid(id: int64):
 @pytest.mark.parametrize("id, level", [(15, 0), (980, 3), (1003971, 8), (16843849991222, 20)])
 def test_htm_level_raw(id: int, level: int):
     """Test id to level conversion."""
-    assert PynyHTM.htm_level_raw(id) == level
-    assert PynyHTM.HTM.get_level(id) == level
+    assert pynyhtm.htm_level_raw(id) == level
+    assert pynyhtm.HTM.get_level(id) == level
 
 
 @pytest.mark.parametrize("id", [(0), (-1)])
 def test_htm_level_raw_invalid(id: int):
     """Test invalid id during level conversion."""
     with pytest.raises(ValueError):
-        PynyHTM.htm_level_raw(id)
+        pynyhtm.htm_level_raw(id)
     with pytest.raises(ValueError):
-        PynyHTM.HTM.get_level(id)
+        pynyhtm.HTM.get_level(id)
 
 
 def test_htm_id_to_dec():
     """Test if htm_idtodec is wrapped."""
-    assert PynyHTM.htm_id_to_dec(12345) > 0
-    assert PynyHTM.HTM.id_to_dec(12345) > 0
+    assert pynyhtm.htm_id_to_dec(12345) > 0
+    assert pynyhtm.HTM.id_to_dec(12345) > 0
 
 
 @pytest.mark.parametrize("id, parent_id", [(61, 15), (16062643, 4015660)])
 def test_htm_parent(id: int64, parent_id: int64):
     """Test parent id determination."""
-    assert PynyHTM.HTM.parent(id) == parent_id
+    assert pynyhtm.HTM.parent(id) == parent_id
 
 
 @pytest.mark.parametrize("id", [(-1), (123), (15)])
 def test_htm_parent_invalid(id: int64):
     """Test invalid id for parent determination."""
     with pytest.raises(ValueError):
-        assert PynyHTM.HTM.parent(id)
+        assert pynyhtm.HTM.parent(id)
 
 
 @pytest.mark.parametrize("id", [(61), (15), (16062643), (4015660)])
 def test_htm_children(id: int64):
     """Validate generated children are valid."""
-    children = PynyHTM.HTM.children(id)
+    children = pynyhtm.HTM.children(id)
 
     # Instantiate child to verify it's id is correct
     for child in children:
@@ -86,7 +85,7 @@ def test_htm_children(id: int64):
 def test_htm_children_invalid(id: int64):
     """Test invalid id during child generation."""
     with pytest.raises(ValueError):
-        PynyHTM.HTM.children(id)
+        pynyhtm.HTM.children(id)
 
 
 @pytest.mark.parametrize(
@@ -164,13 +163,13 @@ def test_htm_children_invalid(id: int64):
 def test_directional_neighbor(id: int64, dir: int, target_id: int64):
     """Test if the correct neighbor is retrieved across root level changes."""
     if dir == 0:
-        dir = PynyHTM.NeighborDirection.OC_ZERO
+        dir = pynyhtm.NeighborDirection.OC_ZERO
     elif dir == 1:
-        dir = PynyHTM.NeighborDirection.OC_ONE
+        dir = pynyhtm.NeighborDirection.OC_ONE
     elif dir == 2:
-        dir = PynyHTM.NeighborDirection.OC_TWO
+        dir = pynyhtm.NeighborDirection.OC_TWO
 
-    neighbor = PynyHTM.HTM.neighbor(id, dir)[0]
+    neighbor = pynyhtm.HTM.neighbor(id, dir)[0]
     assert neighbor == target_id
 
 
@@ -193,7 +192,7 @@ def test_directional_neighbor(id: int64, dir: int, target_id: int64):
 )
 def test_neighbors(id: int64, n1: int64, n3: int64, n2: int64):
     """Test if the correct neighbors are retrieved."""
-    neighbors = PynyHTM.HTM.neighbors(id)
+    neighbors = pynyhtm.HTM.neighbors(id)
 
     assert n1 in neighbors
     assert n2 in neighbors
@@ -210,9 +209,9 @@ def test_neighbors_fuzz():
         id = id_prefix << (layer * 2) | id_suffix
 
         # Test using neighbor symmetry
-        neighbors = PynyHTM.HTM.neighbors(id)
+        neighbors = pynyhtm.HTM.neighbors(id)
         for neighbor in neighbors:
-            back_neighbors = PynyHTM.HTM.neighbors(neighbor)
+            back_neighbors = pynyhtm.HTM.neighbors(neighbor)
             assert id in back_neighbors
 
 
@@ -227,10 +226,10 @@ def test_neighbors_fuzz():
 )
 def test_circle_search(latitude: float, longitude: float, level: float):
     """Test circle search by checking if a result is returned and if direct neighbors are contained."""
-    sc = PynyHTM.SphericalCoordinate(latitude, longitude)
-    neighbors = PynyHTM.HTM.neighbors(sc.get_htm_id(level))
+    sc = pynyhtm.SphericalCoordinate(latitude, longitude)
+    neighbors = pynyhtm.HTM.neighbors(sc.get_htm_id(level))
 
-    area_ids = PynyHTM.HTM.circle_search(sc.to_v3(), 20, level)
+    area_ids = pynyhtm.HTM.circle_search(sc.to_v3(), 20, level)
 
     for neighbor in neighbors:
         assert neighbor in area_ids

@@ -1,6 +1,6 @@
 """Examples for using PynyHTM."""
 
-from PynyHTM import HTM, V3, SphericalCoordinate, Triangle
+from pynyhtm import HTM, V3, SphericalCoordinate, Triangle
 
 if __name__ == "__main__":
     # Retrieve HTM ID for a spherical coordinate

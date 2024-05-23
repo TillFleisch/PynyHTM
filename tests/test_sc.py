@@ -1,15 +1,14 @@
 """Spherical coordinate related (wrapped) tests for the PynyHTM wrapper."""
 
+import pynyhtm
 import pytest
-
-import PynyHTM
-from PynyHTM import SphericalCoordinate
+from pynyhtm import SphericalCoordinate
 
 
 @pytest.mark.parametrize("lat, lon", [(0, 0), (10, 10), (5, 10), (10, 5), (-10, -10)])
 def test_sc_init_wrapped_valid(lat: float, lon: float):
     """Test instantiation of valid sc using wrapping method."""
-    sc = PynyHTM.htm_sc_init_wrapped(lat, lon)
+    sc = pynyhtm.htm_sc_init_wrapped(lat, lon)
     assert sc.longitude == lon and sc.latitude == lat
 
 
@@ -17,7 +16,7 @@ def test_sc_init_wrapped_valid(lat: float, lon: float):
 def test_sc_init_wrapped_invalid(lat: float, lon: float):
     """Test instantiation of invalid sc using wrapping method."""
     with pytest.raises(ValueError):
-        PynyHTM.htm_sc_init_wrapped(lat, lon)
+        pynyhtm.htm_sc_init_wrapped(lat, lon)
 
 
 def test_sc_to_v3_wrapped():

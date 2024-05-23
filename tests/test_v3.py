@@ -1,15 +1,14 @@
 """Vector v3 related (wrapped) tests for the PynyHTM wrapper."""
 
+import pynyhtm
 import pytest
-
-import PynyHTM
-from PynyHTM import V3, SphericalCoordinate
+from pynyhtm import V3, SphericalCoordinate
 
 
 @pytest.mark.parametrize("x, y, z", [(10, 10, 10), (1, 5, 10), (10, 5, 1), (-10, -5, -1)])
 def test_v3_init_wrapped_valid(x: float, y: float, z: float):
     """Test instantiation of valid v3 using wrapping method."""
-    v3 = PynyHTM.htm_v3_init_wrapped(x, y, z)
+    v3 = pynyhtm.htm_v3_init_wrapped(x, y, z)
     assert v3.x == x and v3.y == y and v3.z == z
 
 

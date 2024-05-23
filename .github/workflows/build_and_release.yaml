@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://pypi.org/p/PynyHTM
+      url: https://pypi.org/p/pynyhtm
     permissions:
       id-token: write
     steps:

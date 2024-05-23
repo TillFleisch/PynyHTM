@@ -13,7 +13,7 @@ if status:
     raise Exception("failed to *make* libtinyhtm")
 
 pynyHTM_extension = Extension(
-    name="PynyHTM",
+    name="pynyhtm",
     sources=["pynyhtm.pyx"],
     libraries=[":libtinyhtm.a"],
     library_dirs=["."],
@@ -22,4 +22,4 @@ pynyHTM_extension = Extension(
     py_limited_api=True,
 )
 
-setup(name="PynyHTM", ext_modules=cythonize([pynyHTM_extension]))
+setup(name="pynyhtm", ext_modules=cythonize([pynyHTM_extension]))

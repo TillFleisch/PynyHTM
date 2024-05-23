@@ -11,7 +11,7 @@ The code snippets below are available in [this example file](example.py).
 Classes `SphericalCoordinate` and `V3` cover basic functionality for expressing points in 3D space.
 
 ```python
-from PynyHTM import HTM, SphericalCoordinate, Triangle, V3
+from pynyhtm import HTM, SphericalCoordinate, Triangle, V3
 
 # Retrieve HTM ID for a spherical coordinate
 sc_1 = SphericalCoordinate(10.1234, -20.1234)

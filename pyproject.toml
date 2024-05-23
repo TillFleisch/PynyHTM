@@ -6,6 +6,7 @@ max-line-length = 120
 
 [tool.isort]
 profile = "black"
+known_third_party = "pynyhtm"
 
 [tool.cython-lint]
 max-line-length = 120
@@ -35,7 +36,7 @@ dev = ["black", "isort", "pytest"]
 
 
 [project]
-name = "PynyHTM"
+name = "pynyhtm"
 version = "0.0.2"
 description = "Python wrapper for the libtinyhtm library."
 readme = "README.md"
