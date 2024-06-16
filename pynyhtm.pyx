@@ -1,5 +1,9 @@
 """Wrapping classes and methods for libtinyhtm."""
 from enum import Enum
+
+cimport numpy
+
+numpy.import_array()
 from numpy cimport int64_t
 
 

@@ -41,7 +41,7 @@ version = "0.0.3"
 description = "Python wrapper for the libtinyhtm library."
 readme = "README.md"
 authors = [{ name = "Till", email = "till@fleisch.dev" }]
-license = { file = "LICENSE" }
+license = { file = "LICENCE" }
 keywords = ["htm", "libtinyhtm", "hierarchial triangular mesh", "triangle subdivision", "index"]
 dependencies = [
     "numpy",

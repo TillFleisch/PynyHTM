@@ -1,4 +1,4 @@
 graft libtinyhtm
 include Makefile
 include pynyhtm.pyx
-explude pynyhtm.cpp
+exclude pynyhtm.cpp
