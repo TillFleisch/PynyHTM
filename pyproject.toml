@@ -37,7 +37,7 @@ dev = ["black", "isort", "pytest"]
 
 [project]
 name = "pynyhtm"
-version = "0.0.3"
+version = "0.1.0"
 description = "Python wrapper for the libtinyhtm library."
 readme = "README.md"
 authors = [{ name = "Till", email = "till@fleisch.dev" }]
