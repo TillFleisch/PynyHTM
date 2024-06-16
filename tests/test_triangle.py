@@ -216,6 +216,28 @@ def test_neighbors_fuzz():
 
 
 @pytest.mark.parametrize(
+    "id, n1, n2, n3",
+    [
+        # 3 - center
+        (53183, 53180, 53181, 53182),
+        # 0 - edge
+        (53180, 53181, 53183, 53182),
+        # 1 - edge
+        (53181, 53180, 53183, 53182),
+        # 2 - edge
+        (53182, 53180, 53181, 53183),
+    ],
+)
+def test_siblings(id: int64, n1: int64, n3: int64, n2: int64):
+    """Test same trixel sibling method."""
+    siblings = pynyhtm.HTM.siblings(id)
+
+    assert n1 in siblings
+    assert n2 in siblings
+    assert n3 in siblings
+
+
+@pytest.mark.parametrize(
     "latitude, longitude, level",
     [
         (38.0926507, 140.1839152, 5),

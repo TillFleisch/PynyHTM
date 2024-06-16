@@ -700,6 +700,27 @@ class HTM():
 
         return children
 
+    def siblings(id: int64_t) -> list[int64_t]:
+        """
+        Gets the sibling trixels of the triangle identified by id.
+        This includes all other triangles, which have the same parent as the from id.
+
+        :param id: target triangle
+        :returns: list of 3 siblings
+        :raises valueError: if the provided id is invalid
+        """
+
+        # Assert valid id provided
+        HTM.get_level(id)
+
+        tail = id & 3
+        siblings = []
+        for x in range(0, 4):
+            if x != tail:
+                siblings.append(((id >> 2) <<2) + x)
+
+        return siblings
+
     def neighbors(id: int64_t) -> list[int64_t]:
         """
         Gets the neighboring trixels for the given id.
